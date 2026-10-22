@@ -11,5 +11,6 @@
   "art": "CleanFrame original utility outline, 24px grid / 1.6px stroke",
   "apps": "CleanFrame original utility outline, 24px grid / 1.6px stroke",
   "settings": "CleanFrame original utility outline, 24px grid / 1.6px stroke",
-  "home": "CleanFrame original utility outline, 24px grid / 1.6px stroke"
+  "home": "CleanFrame original utility outline, 24px grid / 1.6px stroke",
+  "samsunghome": "Original CleanFrame utility home outline (same artwork as the \"home\" utility icon in this folder); used as the Samsung Home launcher mark."
 }

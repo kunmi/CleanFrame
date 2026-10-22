@@ -2,12 +2,19 @@
 (function () {
   'use strict';
   var IDS = {
-    stremio: 'IkWsFHtOY9.Stremio', netflix: 'org.tizen.netflix-app',
-    disneyplus: 'MCmYXNxgcu.DisneyPlus', youtube: '9Ur5IzDKqV.TizenYouTube',
+    youtube: '9Ur5IzDKqV.TizenYouTube', disneyplus: 'MCmYXNxgcu.DisneyPlus',
+    netflix: 'org.tizen.netflix-app', magentatv: null,
+    moonlight: 'MoonLightS.MoonlightWasm', tizenbrew: 'xvvl3S1bvH.TizenBrewStandalone',
+    samsunghome: 'com.samsung.tv.csfs',
+    stremio: 'IkWsFHtOY9.Stremio',
     appletv: 'com.samsung.tv.aria-video', primevideo: 'org.tizen.primevideo',
     abciview: 'mWK87Xghap.ABCiview', sbs: 'OyE7OuxlUi.SBSOnDemand',
     applemusic: 'org.tizen.apple.apple-music'
   };
+  /* Brands with no published Tizen app ID are found in the TV's installed
+     app list by name at launch time. MagentaTV (Telekom) publishes no stable
+     app ID, so its IDS entry above stays null. */
+  var NAME_LOOKUP = { magentatv: /magenta\s*tv/i };
   var STREAMING = ['as6cYRgkPy.Binge', '73iTZRTc34.Stan', '5b8c3eb16b.BeamCTVDev',
     'KaLitts8bq.tenplaySamsungTizen', 'eYuOiOLYQX.KayoSports', 'Ne2ZsPWdKl.9NOW',
     '3KA0pm7a7V.TubiTV', 'rJeHak5zRg.Spotify', 'icp4AvUPiA.7plus'];
@@ -34,9 +41,22 @@
     try { api().launch(id, function () { finish(null); }, function (err) { finish(failure(err)); }); }
     catch (err) { finish(failure(err)); }
   }
+  function launchByName(pattern, done) {
+    if (!api()) { unavailable(done); return; }
+    var finish = bounded(done);
+    try {
+      api().getAppsInfo(function (list) {
+        var match = null;
+        (list || []).forEach(function (a) { if (!match && a.id && pattern.test(a.name || '')) match = a; });
+        if (!match) { finish({ message: 'That app is not installed on this TV.' }); return; }
+        launchApp(match.id, function (err) { finish(err); });
+      }, function (err) { finish(failure(err)); });
+    } catch (err) { finish(failure(err)); }
+  }
   function launch(brand, done) {
-    if (!IDS[brand]) { done({message: 'This app has no launch target.'}); return; }
-    launchApp(IDS[brand], done);
+    if (IDS[brand]) { launchApp(IDS[brand], done); return; }
+    if (NAME_LOOKUP[brand]) { launchByName(NAME_LOOKUP[brand], done); return; }
+    done({message: 'This app has no launch target.'});
   }
   function art(done) {
     if (!api()) { unavailable(done); return; }
@@ -55,7 +75,7 @@
     try {
       api().getAppsInfo(function (list) {
         var known = {}, seen = {}, result = [];
-        Object.keys(IDS).forEach(function (brand) { known[IDS[brand]] = brand; });
+        Object.keys(IDS).forEach(function (brand) { if (IDS[brand]) known[IDS[brand]] = brand; });
         list.forEach(function (a) {
           var primary = !!known[a.id], stream = STREAMING.indexOf(a.id) >= 0;
           var consumer = /^[A-Za-z0-9]{10}\.[A-Za-z0-9_-]+$/.test(a.id) || CONSUMER_SYSTEM.indexOf(a.id) >= 0;

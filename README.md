@@ -2,6 +2,14 @@
 
 A quieter home screen for Samsung The Frame. Your apps, a photograph and the time, with an interface made for the TV remote.
 
+> **Kunmi fork** — default Home apps adapted for a Samsung S95F in Germany:
+> YouTube, Disney+, Netflix, MagentaTV, Moonlight, TizenBrew, Samsung Home,
+> Apple TV and Prime Video. MagentaTV has no published Tizen app ID, so it is
+> launched by finding the installed app by name. The Samsung Home tile opens
+> Samsung's own Home screen. Upstream's Stremio, ABC iview, SBS On Demand and
+> Apple Music defaults were removed from the Home list; they can still be
+> discovered and added from the app editor when installed.
+
 ![CleanFrame browser preview using the bundled Manrope font](docs/images/cleanframe-dock.jpg)
 
 I built CleanFrame for one TV: my own Samsung The Frame, running Tizen. I'm sharing the code and setup notes as a starting point for other people to build on.
