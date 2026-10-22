@@ -20,7 +20,7 @@ const CATALOG = IDS.map((id, i) => ({ id, name: NAMES[i], show: true, iconPath: 
 const walls = JSON.parse(readFileSync(root + 'app/assets/wallpapers/SOURCES.json', 'utf8'));
 const out = root + '.local/qa/';
 mkdirSync(out, { recursive: true });
-const sourceFiles = ['app/main.js', 'app/device.js', 'app/index.html', 'app/style.css', 'app/config.xml', 'app/assets/wallpapers/SOURCES.json', 'app/assets/wallpapers/catalog.js', 'app/assets/adaptive-ink.js', 'app/assets/icons/metrics.js'];
+const sourceFiles = ['app/main.js', 'app/device.js', 'app/audio.js', 'app/index.html', 'app/style.css', 'app/config.xml', 'app/assets/wallpapers/SOURCES.json', 'app/assets/wallpapers/catalog.js', 'app/assets/adaptive-ink.js', 'app/assets/icons/metrics.js'];
 const hashes = () => Object.fromEntries(sourceFiles.map(f => [f, createHash('sha256').update(readFileSync(root + f)).digest('hex')]));
 const report = { scope: 'Production UI in Chromium; mock public Tizen API only; no TV contacted.', sourceBefore: hashes(), checks: [], failures: [], pageErrors: [], expectedNetworkFailures: [] };
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
@@ -361,13 +361,14 @@ try {
   });
   await run('Settings overview and visible choices', async () => {
     await page(); await scene('settings');
-    const expected = ['settings.group.background', 'settings.group.layout', 'settings.group.typography', 'settings.group.focus', 'settings.editor', 'settings.group.samsung'];
-    check('Overview has all six settings groups', same((await call('actions')).filter(a => expected.includes(a)).sort(), expected.slice().sort()));
+    const expected = ['settings.group.background', 'settings.group.layout', 'settings.group.typography', 'settings.group.focus', 'settings.group.audio', 'settings.editor', 'settings.group.samsung'];
+    check('Overview has all seven settings groups', same((await call('actions')).filter(a => expected.includes(a)).sort(), expected.slice().sort()));
     const specs = {
       background: { bg: ['dark', 'light', 'photo'] },
       layout: { layout: ['list', 'dock'], apps: ['icons', 'both', 'text'], controls: ['icons', 'both', 'text'] },
       typography: { font: (await state()).fonts.available },
-      focus: { focus: ['type', 'glass'], material: ['soft', 'frost', 'tint'] }
+      focus: { focus: ['type', 'glass'], material: ['soft', 'frost', 'tint'] },
+      audio: { audio: ['off', 'relaxing', 'music'] }
     };
     for (const [name, axes] of Object.entries(specs)) {
       await group(name);
@@ -395,7 +396,7 @@ try {
   });
   await run('Settings focus never changes the applied Home', async () => {
     await page();
-    for (const name of ['background', 'layout', 'typography', 'focus', 'samsung']) {
+    for (const name of ['background', 'layout', 'typography', 'focus', 'audio', 'samsung']) {
       await group(name); const before = await settingsSnapshot();
       const visited = new Set();
       for (const direction of ['right', 'right', 'down', 'left', 'left', 'down', 'right', 'right', 'down', 'left', 'up', 'up', 'up', 'right']) {
@@ -472,6 +473,31 @@ try {
     await current.keyboard.down('Escape'); await current.keyboard.down('Escape');
     check('Held physical Back closes one settings layer', (await state()).view === 'settings' && (await state()).focusAction === 'settings.group.layout');
     await current.keyboard.up('Escape');
+  });
+  await run('Background audio settings and lifecycle', async () => {
+    await page(); await group('audio');
+    const rows = await radios();
+    check('Background audio offers Off, Relaxing tunes and Music', same(rows.map(r => r.action).sort(), ['choice.audio.music', 'choice.audio.off', 'choice.audio.relaxing']) && rows.some(r => r.action === 'choice.audio.off' && r.checked === 'true'), rows);
+    const before = await settingsSnapshot();
+    await choice('audio', 'relaxing');
+    check('Relaxing tunes applies and saves once', (await state()).committed.audio === 'relaxing' && (await stored()).audio === 'relaxing' && (await state()).writes === before.writes + 1 && (await state()).audioState.preference === 'relaxing' && (await state()).audioState.active === 'relaxing', await state());
+    await current.waitForFunction(() => ShoreQA.state().audioState.sources > 0);
+    check('Relaxing tunes creates generative audio sources', (await state()).audioState.sources > 0, (await state()).audioState);
+    await choice('audio', 'music');
+    await current.waitForFunction(() => ShoreQA.state().audioState.active === 'music' && ShoreQA.state().audioState.sources > 0);
+    check('Music applies and starts its generative pattern', (await state()).committed.audio === 'music' && (await stored()).audio === 'music', await state());
+    await current.evaluate(() => __setHidden(true));
+    check('Background audio pauses while CleanFrame is hidden', (await state()).audioState.preference === 'music' && (await state()).audioState.active === 'off', (await state()).audioState);
+    await current.evaluate(() => __setHidden(false));
+    await current.waitForFunction(() => ShoreQA.state().audioState.active === 'music');
+    check('Background audio resumes when CleanFrame returns', (await state()).audioState.active === 'music', (await state()).audioState);
+    await scene('home'); await act('home.app.netflix');
+    check('Launching another app stops the background audio first', (await state()).audioState.preference === 'music' && (await state()).audioState.active === 'off', (await state()).audioState);
+    await group('audio'); await choice('audio', 'off');
+    check('Off applies, saves and stops the engine', (await state()).committed.audio === 'off' && (await stored()).audio === 'off' && (await state()).audioState.preference === 'off' && (await state()).audioState.active === 'off', await state());
+    await closePage();
+    await page({ seed: baseline({ audio: 'music' }) });
+    check('Saved Music preference restores on cold start', (await state()).committed.audio === 'music' && (await state()).audioState.preference === 'music' && (await state()).audioState.active === 'music', await state());
   });
   await run('Settings inactive Material retains its choice', async () => {
     await page(); await look({ material: 'tint' });
@@ -580,7 +606,7 @@ try {
     for (const width of [1920, 1280]) {
       await current.setViewportSize({ width, height: width * 9 / 16 });
       await current.waitForFunction(w => Math.abs(document.getElementById('stage').getBoundingClientRect().width - w) < 1, width);
-      for (const name of ['background', 'layout', 'typography', 'focus', 'samsung', 'rotation']) {
+      for (const name of ['background', 'layout', 'typography', 'focus', 'audio', 'samsung', 'rotation']) {
         await group(name === 'rotation' ? 'background' : name);
         if (name === 'rotation') await act('background.rotation');
         const geometry = await current.evaluate(() => {

@@ -9,6 +9,11 @@ A quieter home screen for Samsung The Frame. Your apps, a photograph and the tim
 > Samsung's own Home screen. Upstream's Stremio, ABC iview, SBS On Demand and
 > Apple Music defaults were removed from the Home list; they can still be
 > discovered and added from the app editor when installed.
+>
+> This fork also adds **Settings → Background audio**, with generated
+> Relaxing tunes and Music modes. The sound is created locally with Web Audio;
+> no music files are bundled. It plays while CleanFrame is visible, fades out
+> before another app opens and resumes when CleanFrame returns.
 
 ![CleanFrame browser preview using the bundled Manrope font](docs/images/cleanframe-dock.jpg)
 
@@ -38,6 +43,7 @@ The public preview uses the included Manrope, Geist and Newsreader fonts.
 - Choose a List or Dock layout, with icons, names or both.
 - Use a photograph, light or dark background, with a simple 12-hour clock.
 - Adjust typography, focus and glass materials through the same Settings interface.
+- Choose generated background audio: Off, Relaxing tunes or Music.
 - Choose and reorder Home apps; discover installed apps on the TV.
 - Select from fifteen wallpapers and save your preferences locally.
 
