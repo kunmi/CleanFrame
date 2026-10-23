@@ -463,10 +463,12 @@
     if (busy) return;
     busy = true; busyTimer = setTimeout(release, 10000);
     if (window.FrameAudio) FrameAudio.pause();
+    holdLiveVideo(true);
     run(function (err) {
       release();
       if (err) {
         if (window.FrameAudio && !document.hidden) FrameAudio.resume();
+        holdLiveVideo(false);
         message(title, err.message || 'The TV could not open this screen.', err.detail || '');
       }
       render(); syncRotation();
@@ -1475,7 +1477,7 @@
     var rows = appearanceRows.querySelector('.wallpaper-rows'), shown = wall(S.wallShown) || wall(S.c.wall), candidate = WALLS[t.i], status, note, hint;
     keyed(rows, WALLS.map(function (w) { return { key: w.id, wall: w }; }), function (row, item, i) {
       var visible = i >= t.top && i < t.top + WALL_VISIBLE, w = item.wall, image;
-      setContent(row, w.id + '|' + visible, '<span class="wallpaper-thumb">' + (visible ? '<img src="' + WP + w.id + '-thumb.jpg" alt="">' : '') + '</span><span class="setting-copy"><span class="setting-name">' + esc(w.name) + '</span></span><span class="setting-tick" aria-hidden="true"></span>');
+      setContent(row, w.id + '|' + visible, '<span class="wallpaper-thumb">' + (visible ? '<img src="' + WP + w.id + '-thumb.jpg" alt="">' : '') + (w.video ? '<span class="wallpaper-live">Live</span>' : '') + '</span><span class="setting-copy"><span class="setting-name">' + esc(w.name) + '</span></span><span class="setting-tick" aria-hidden="true"></span>');
       row.className = 'setting-choice wallpaper-choice' + (t.f.zone === 'photo' && t.i === i ? ' is-focus' : '') + (w.id === S.c.wall ? ' is-applied' : '');
       row.style.transform = 'translate3d(0,' + (i * WALL_ROW) + 'px,0)'; row.style.visibility = visible ? 'visible' : 'hidden';
       row.setAttribute('role', 'radio'); row.setAttribute('tabindex', '-1'); row.setAttribute('aria-label', w.name);
@@ -1698,6 +1700,7 @@
     S.shown = { bg: look.bg, wall: look.wall, material: look.material, font: look.font };
     phFields.concat(utFields).forEach(function (el) { var p = el._placement; if (p) fieldTransform(el, p.x, p.y, p.width, p.height); });
     S.wallShown = look.wall; S.wallPending = null; S.wallError = null;
+    syncLiveVideo();
   }
   function cleanPatch(patch) {
     var out = {}, k;
@@ -1784,6 +1787,59 @@
     if (S.c.bg === 'photo' && committedBundle && committedBundle.key === bundleKey(S.c)) installBundle(committedBundle, S.c);
     else if (S.c.bg !== 'photo' || S.bundleKey === bundleKey(S.c)) installBundle(null, S.c);
     else setLook({}, { transient: true });
+  }
+
+  /* ---------- Live video wallpapers ----------
+     A live wallpaper keeps its still photo as the base layer and the video
+     only ever sits on top of it, muted and looping. Any load or codec
+     failure removes the video and leaves the still, so a live wallpaper
+     can never break the Home screen. Playback mirrors the background
+     audio lifecycle: it pauses while CleanFrame is hidden and while an
+     app launch is in flight, and resumes on return. */
+  var liveVideoEl = null, liveVideoId = null, liveVideoHeld = false;
+  function destroyLiveVideo() {
+    var el = liveVideoEl;
+    liveVideoEl = null; liveVideoId = null;
+    if (!el) return;
+    try { el.pause(); } catch (e) {}
+    el.removeAttribute('src');
+    try { el.load(); } catch (e) {}
+    if (el.parentNode) el.parentNode.removeChild(el);
+  }
+  function liveVideoTarget() {
+    var w;
+    if (!S.shown || S.shown.bg !== 'photo') return null;
+    w = wall(S.shown.wall);
+    return w && w.video ? w : null;
+  }
+  function applyLiveVideoPlayback() {
+    var p;
+    if (!liveVideoEl) return;
+    if (document.hidden || liveVideoHeld) { try { liveVideoEl.pause(); } catch (e) {} return; }
+    try { p = liveVideoEl.play(); if (p && p.catch) p.catch(function () {}); } catch (e) {}
+  }
+  function syncLiveVideo() {
+    var target = liveVideoTarget(), el;
+    if (!target) { destroyLiveVideo(); return; }
+    if (liveVideoId !== target.id || !liveVideoEl) {
+      destroyLiveVideo();
+      el = document.createElement('video');
+      el.className = 'live-video';
+      el.setAttribute('aria-hidden', 'true');
+      el.muted = true; el.loop = true; el.autoplay = true;
+      el.setAttribute('playsinline', ''); el.setAttribute('preload', 'auto');
+      el.addEventListener('playing', function () { if (liveVideoEl === el) el.className = 'live-video is-on'; });
+      el.addEventListener('error', function () { if (liveVideoEl === el) destroyLiveVideo(); }, true);
+      el.src = WP + target.video;
+      IMG.photo.parentNode.insertBefore(el, IMG.photo.nextSibling);
+      liveVideoEl = el; liveVideoId = target.id;
+    }
+    applyLiveVideoPlayback();
+  }
+  function holdLiveVideo(held) { liveVideoHeld = held; applyLiveVideoPlayback(); }
+  function liveVideoState() {
+    if (!liveVideoEl) return null;
+    return { id: liveVideoId, paused: liveVideoEl.paused, src: liveVideoEl.getAttribute('src'), live: liveVideoEl.className.indexOf('is-on') >= 0 };
   }
 
   /* ---------- Lifecycle and remote input ---------- */
@@ -1887,8 +1943,8 @@
   window.addEventListener('focus', function () { release(); focusStage(); after(); updateClock(); });
   document.addEventListener('visibilitychange', function () {
     heldKeys = {};
-    if (document.hidden) { if (window.FrameAudio) FrameAudio.pause(); pauseRotation(); clearTimeout(clockTimer); }
-    else { release(); if (window.FrameAudio && S.c && S.c.audio !== 'off') FrameAudio.resume(); after(); updateClock(); focusStage(); }
+    if (document.hidden) { if (window.FrameAudio) FrameAudio.pause(); applyLiveVideoPlayback(); pauseRotation(); clearTimeout(clockTimer); }
+    else { release(); if (window.FrameAudio && S.c && S.c.audio !== 'off') FrameAudio.resume(); liveVideoHeld = false; syncLiveVideo(); after(); updateClock(); focusStage(); }
   });
   window.addEventListener('resize', fit);
 
@@ -1904,6 +1960,7 @@
     out.draft = t.lifted ? { id: t.lifted.id, order: t.lifted.order.slice() } : null;
     out.settingsGroup = t.id === 'wallpaper' ? 'wallpaper' : t.id === 'appearance' ? t.group : null;
     out.audioState = window.FrameAudio ? FrameAudio.state() : null;
+    out.liveVideo = liveVideoState();
     out.focusedChoice = item && item.axis ? { axis: item.axis, value: item.value, action: item.action, disabled: item.disabled } : null;
     out.candidate = out.focusedChoice ? { axis: item.axis, value: item.value, action: item.action, pending: !!S.pending, pendingTarget: S.pending ? S.pending.target : null } : null;
     out.wallpaperPicker = t.id === 'wallpaper' ? { candidate: WALLS[t.i].id, applied: S.c.wall, shown: S.wallShown, pending: t.previewDue || S.wallPending,

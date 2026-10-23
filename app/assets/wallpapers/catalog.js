@@ -226,5 +226,53 @@ window.CleanFrameWallpapers = [
     "listColumn": 0,
     "dockQuiet": false,
     "clockMist": false
+  },
+  {
+    "id": "surf",
+    "name": "Rolling surf",
+    "src": "assets/wallpapers/surf.jpg",
+    "thumb": "assets/wallpapers/surf-thumb.jpg",
+    "tone": "light",
+    "ut": {
+      "tr": "mist",
+      "br": "mist"
+    },
+    "frostVeil": 0.2,
+    "listColumn": 0,
+    "dockQuiet": false,
+    "clockMist": true,
+    "video": "surf.mp4"
+  },
+  {
+    "id": "duskcoast",
+    "name": "Dusk coast",
+    "src": "assets/wallpapers/duskcoast.jpg",
+    "thumb": "assets/wallpapers/duskcoast-thumb.jpg",
+    "tone": "dark",
+    "ut": {
+      "tr": "mist",
+      "br": "mist"
+    },
+    "frostVeil": 0.3,
+    "listColumn": 0,
+    "dockQuiet": false,
+    "clockMist": true,
+    "video": "duskcoast.mp4"
+  },
+  {
+    "id": "rainwindow",
+    "name": "Rain window",
+    "src": "assets/wallpapers/rainwindow.jpg",
+    "thumb": "assets/wallpapers/rainwindow-thumb.jpg",
+    "tone": "light",
+    "ut": {
+      "tr": "mist",
+      "br": "mist"
+    },
+    "frostVeil": 0.2,
+    "listColumn": 0,
+    "dockQuiet": false,
+    "clockMist": true,
+    "video": "rainwindow.mp4"
   }
 ];

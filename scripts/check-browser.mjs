@@ -1,6 +1,6 @@
 // Production UI checks. Mock only the public Tizen boundary; never contact a TV.
 import { createHash } from 'node:crypto';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { openPreview, root } from './browser.mjs';
 
 const KEY = 'cleanframe.home.v1';
@@ -680,7 +680,7 @@ try {
       await act('background.wallpaper');
       await current.waitForFunction(() => ShoreQA.state().view === 'wallpaper');
       const names = await current.locator('.wallpaper-choice .setting-name').allTextContents();
-      check(layout + ' Wallpaper shows all fifteen named choices at ' + width, same(names, walls.map(w => w.name)), names);
+      check(layout + ' Wallpaper shows all named choices at ' + width, same(names, walls.map(w => w.name)), names);
       check('Wallpaper entry keeps the existing Home frame ' + layout + '/' + width, same(await previewFrame(), frame));
       const first = await wallpaperListGeometry();
       check('Wallpaper list shows about six rows with contained labels ' + layout + '/' + width, first.fullyVisible.length >= 5 && first.fullyVisible.length <= 6 && first.partlyVisible.length <= 7 && first.clippedParts.length === 0 && first.fullyVisible.includes(first.focus) && (await call('where')).focusCount === 1, first);
@@ -854,6 +854,58 @@ try {
     check('Broken thumbnail keeps its named 16:9 slot without a broken image glyph', fallback.name.includes(target.name) && fallback.slotVisible && fallback.inside && Math.abs(fallback.ratio - 16 / 9) < 0.05 && fallback.imageHidden, fallback);
     await nav('ok'); await ready();
     check('A missing thumbnail does not prevent applying its full photo', (await state()).committed.wall === target.id && Object.values(await wallpaperBundle()).every(src => src.includes('/' + target.id)));
+  });
+  await run('Live video wallpapers', async () => {
+    const live = walls.filter(w => w.video);
+    check('Catalogue has three live wallpapers with bundled loops', live.length === 3 && live.every(w => existsSync(root + 'app/' + w.video)), live.map(w => w.id));
+    await page();
+    /* Headless Chromium may lack H.264, so assert the element wiring and the
+       play/pause calls, not decoded frames. */
+    await current.evaluate(() => {
+      window.__mediaCalls = [];
+      const proto = window.HTMLMediaElement.prototype, play = proto.play, pause = proto.pause;
+      proto.play = function () { window.__mediaCalls.push('play'); const r = play.apply(this, arguments); if (r && r.catch) r.catch(() => {}); return r; };
+      proto.pause = function () { window.__mediaCalls.push('pause'); return pause.apply(this, arguments); };
+    });
+    const mediaCalls = () => current.evaluate(() => window.__mediaCalls);
+    check('A still wallpaper has no video layer', (await state()).liveVideo === null && await current.evaluate(() => !document.querySelector('.live-video')));
+    await look({ wall: 'surf' });
+    const wired = await current.evaluate(() => {
+      const els = document.querySelectorAll('.live-video'), el = els[0];
+      return { count: els.length, tag: el && el.tagName, src: el && el.getAttribute('src'), muted: el && el.muted, loop: el && el.loop,
+        photo: document.getElementById('photo').getAttribute('src') };
+    });
+    check('Applying Rolling surf adds exactly one muted looping video over its still', wired.count === 1 && wired.tag === 'VIDEO' && wired.src.endsWith('/wallpapers/surf.mp4') && wired.muted === true && wired.loop === true && wired.photo.endsWith('/wallpapers/surf.jpg'), wired);
+    check('QA reports the live video and playback was requested', (await state()).liveVideo !== null && (await state()).liveVideo.id === 'surf' && (await mediaCalls()).includes('play'), await state());
+    await current.screenshot({ path: out + 'live-wallpaper-surf-1920.jpg', quality: 90 });
+    await current.evaluate(() => __setHidden(true));
+    check('Hiding CleanFrame pauses the live video', (await mediaCalls()).includes('pause') && (await state()).liveVideo.paused === true, await state());
+    await current.evaluate(() => __setHidden(false));
+    check('Showing CleanFrame resumes the live video', await current.evaluate(() => { const c = window.__mediaCalls; return c.lastIndexOf('play') > c.lastIndexOf('pause'); }), await mediaCalls());
+    const pausesBefore = (await mediaCalls()).filter(c => c === 'pause').length;
+    await act('home.app.netflix');
+    check('Launching an app pauses the live video first', (await mediaCalls()).filter(c => c === 'pause').length > pausesBefore && (await state()).liveVideo.paused === true, await state());
+    await look({ wall: walls[0].id });
+    check('Switching to a still wallpaper removes the video', (await state()).liveVideo === null && await current.evaluate(() => !document.querySelector('.live-video')));
+    await wallpaper();
+    const badges = await current.evaluate(() => [...document.querySelectorAll('.wallpaper-choice')].map(row => ({ action: row.getAttribute('data-action'), live: !!row.querySelector('.wallpaper-live') })));
+    check('Wallpaper picker marks only the live entries', badges.filter(b => b.live).map(b => b.action).sort().join() === live.map(w => 'wallpaper.choose.' + w.id).sort().join(), badges);
+    await nav(...Array(walls.findIndex(w => w.id === 'surf')).fill('down')); await wallpaperSettled('surf');
+    await current.screenshot({ path: out + 'wallpaper-picker-live-1920.jpg', quality: 90 });
+    await nav('back'); await ready();
+    await closePage();
+    await page({ seed: baseline({ wall: 'alpine', mode: '5' }), minuteMs: 120 });
+    await current.waitForFunction(id => ShoreQA.state().wallpaper === id, 'surf', { timeout: 6000 });
+    check('Rotation onto a live wallpaper starts its video', (await state()).liveVideo !== null && (await state()).liveVideo.id === 'surf' && await current.evaluate(() => document.querySelectorAll('.live-video').length === 1), await state());
+    await current.waitForFunction(id => ShoreQA.state().wallpaper === id, 'duskcoast', { timeout: 6000 });
+    check('Rotation between live wallpapers replaces the video', (await state()).liveVideo !== null && (await state()).liveVideo.id === 'duskcoast' && await current.evaluate(() => document.querySelectorAll('.live-video').length === 1), await state());
+    await closePage();
+    await page();
+    current.__expectedFailures.push('/wallpapers/surf.mp4');
+    await current.route('**/wallpapers/surf.mp4', route => route.abort('failed'));
+    await look({ wall: 'surf' });
+    await current.waitForFunction(() => !document.querySelector('.live-video'));
+    check('A failed live video keeps the still wallpaper without an error state', (await state()).shown.wall === 'surf' && (await state()).liveVideo === null && !(await state()).error && await current.evaluate(() => document.getElementById('photo').getAttribute('src').endsWith('/wallpapers/surf.jpg')), await state());
   });
   await run('Physical-key repeats and Back hierarchy', async () => {
     await page(); await editor(); await remove('netflix');

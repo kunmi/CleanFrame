@@ -17,6 +17,12 @@ A quieter home screen for Samsung The Frame. Your apps, a photograph and the tim
 > Web Audio; no music files are bundled. It plays while CleanFrame is
 > visible, fades out before another app opens and resumes when CleanFrame
 > returns.
+>
+> Three of the wallpapers are **live video backgrounds**: short muted
+> Creative Commons loops (Rolling surf, Dusk coast and Rain window) that
+> play over their still photo, pause when CleanFrame is hidden or another
+> app opens, and fall back to the still if video cannot play. Sources and
+> licences are in [asset sources](docs/asset-sources.md).
 
 ![CleanFrame browser preview using the bundled Manrope font](docs/images/cleanframe-dock.jpg)
 
@@ -48,7 +54,7 @@ The public preview uses the included Manrope, Geist and Newsreader fonts.
 - Adjust typography, focus and glass materials through the same Settings interface.
 - Choose generated background audio: Off, Cycle through all, or one of seventeen tunes and landscape scenes.
 - Choose and reorder Home apps; discover installed apps on the TV.
-- Select from fifteen wallpapers and save your preferences locally.
+- Select from eighteen wallpapers — three of them live video loops — and save your preferences locally.
 
 The glass and blur are rendered ahead of time. The TV loads the finished images and uses transforms and opacity for focus feedback.
 

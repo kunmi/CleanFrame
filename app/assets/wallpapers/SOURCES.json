@@ -148,5 +148,41 @@
     "tone": "light",
     "credit": "Cristina Gottardi",
     "source": "https://unsplash.com/photos/CSpjU6hYo_0"
+  },
+  {
+    "id": "surf",
+    "name": "Rolling surf",
+    "src": "assets/wallpapers/surf.jpg",
+    "thumb": "assets/wallpapers/surf-thumb.jpg",
+    "pos": "50% 50%",
+    "tone": "light",
+    "credit": "Mike Peel",
+    "source": "https://commons.wikimedia.org/wiki/File:Mesa_del_Mar_waves_2.webm",
+    "license": "CC BY-SA 4.0",
+    "video": "assets/wallpapers/surf.mp4"
+  },
+  {
+    "id": "duskcoast",
+    "name": "Dusk coast",
+    "src": "assets/wallpapers/duskcoast.jpg",
+    "thumb": "assets/wallpapers/duskcoast-thumb.jpg",
+    "pos": "50% 50%",
+    "tone": "dark",
+    "credit": "Joaquim Baeta",
+    "source": "https://commons.wikimedia.org/wiki/File:Sunset_in_Pantai_Kukup.webm",
+    "license": "CC BY 4.0",
+    "video": "assets/wallpapers/duskcoast.mp4"
+  },
+  {
+    "id": "rainwindow",
+    "name": "Rain window",
+    "src": "assets/wallpapers/rainwindow.jpg",
+    "thumb": "assets/wallpapers/rainwindow-thumb.jpg",
+    "pos": "50% 50%",
+    "tone": "light",
+    "credit": "Frank Vincentz",
+    "source": "https://commons.wikimedia.org/wiki/File:Radevormwald_-_Raindrops_on_a_window_07_(1)_ies.webm",
+    "license": "CC BY-SA 3.0",
+    "video": "assets/wallpapers/rainwindow.mp4"
   }
 ]
