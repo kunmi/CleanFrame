@@ -24,6 +24,7 @@ const sourceFiles = ['app/main.js', 'app/device.js', 'app/audio.js', 'app/index.
 const hashes = () => Object.fromEntries(sourceFiles.map(f => [f, createHash('sha256').update(readFileSync(root + f)).digest('hex')]));
 const report = { scope: 'Production UI in Chromium; mock public Tizen API only; no TV contacted.', sourceBefore: hashes(), checks: [], failures: [], pageErrors: [], expectedNetworkFailures: [] };
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+const AUDIO_CHOICES = ['off', 'cycle', 'relaxing', 'music', 'piano', 'lofi', 'musicbox', 'strings', 'jazz', 'guitar', 'beach', 'rain', 'storm', 'forest', 'stream', 'wind', 'crickets', 'campfire', 'ocean'];
 const baseline = (patch = {}) => ({ dock: PRIMARY.slice(), wallpaper: walls[0].id, mode: 'fixed', lastApp: 'netflix', theme: 'shore', ...patch });
 let preview, current, section = '';
 
@@ -368,7 +369,7 @@ try {
       layout: { layout: ['list', 'dock'], apps: ['icons', 'both', 'text'], controls: ['icons', 'both', 'text'] },
       typography: { font: (await state()).fonts.available },
       focus: { focus: ['type', 'glass'], material: ['soft', 'frost', 'tint'] },
-      audio: { audio: ['off', 'relaxing', 'music'] }
+      audio: { audio: AUDIO_CHOICES }
     };
     for (const [name, axes] of Object.entries(specs)) {
       await group(name);
@@ -477,12 +478,17 @@ try {
   await run('Background audio settings and lifecycle', async () => {
     await page(); await group('audio');
     const rows = await radios();
-    check('Background audio offers Off, Relaxing tunes and Music', same(rows.map(r => r.action).sort(), ['choice.audio.music', 'choice.audio.off', 'choice.audio.relaxing']) && rows.some(r => r.action === 'choice.audio.off' && r.checked === 'true'), rows);
+    check('Background audio offers Off, Cycle and all seventeen scenes', same(rows.map(r => r.action).sort(), AUDIO_CHOICES.map(v => 'choice.audio.' + v).sort()) && rows.some(r => r.action === 'choice.audio.off' && r.checked === 'true'), rows);
     const before = await settingsSnapshot();
     await choice('audio', 'relaxing');
     check('Relaxing tunes applies and saves once', (await state()).committed.audio === 'relaxing' && (await stored()).audio === 'relaxing' && (await state()).writes === before.writes + 1 && (await state()).audioState.preference === 'relaxing' && (await state()).audioState.active === 'relaxing', await state());
     await current.waitForFunction(() => ShoreQA.state().audioState.sources > 0);
     check('Relaxing tunes creates generative audio sources', (await state()).audioState.sources > 0, (await state()).audioState);
+    for (const sceneId of ['beach', 'rain', 'crickets']) {
+      await choice('audio', sceneId);
+      await current.waitForFunction(id => ShoreQA.state().audioState.active === id && ShoreQA.state().audioState.sources > 0, sceneId);
+      check(sceneId + ' scene applies and starts generative sources', (await state()).committed.audio === sceneId && (await stored()).audio === sceneId && (await state()).audioState.scene === sceneId, await state());
+    }
     await choice('audio', 'music');
     await current.waitForFunction(() => ShoreQA.state().audioState.active === 'music' && ShoreQA.state().audioState.sources > 0);
     check('Music applies and starts its generative pattern', (await state()).committed.audio === 'music' && (await stored()).audio === 'music', await state());
@@ -493,11 +499,29 @@ try {
     check('Background audio resumes when CleanFrame returns', (await state()).audioState.active === 'music', (await state()).audioState);
     await scene('home'); await act('home.app.netflix');
     check('Launching another app stops the background audio first', (await state()).audioState.preference === 'music' && (await state()).audioState.active === 'off', (await state()).audioState);
+    await group('audio'); await choice('audio', 'cycle');
+    await current.waitForFunction(() => ShoreQA.state().audioState.active === 'cycle' && ShoreQA.state().audioState.scene === 'relaxing' && ShoreQA.state().audioState.sources > 0);
+    check('Cycle starts on the first scene', (await state()).committed.audio === 'cycle' && (await stored()).audio === 'cycle' && (await state()).audioState.preference === 'cycle', await state());
+    await current.evaluate(() => FrameAudio.next());
+    check('Cycle next advances to the second scene', (await state()).audioState.active === 'cycle' && (await state()).audioState.scene === 'music', (await state()).audioState);
+    await current.evaluate(() => FrameAudio.next());
+    check('Cycle next advances in catalogue order', (await state()).audioState.active === 'cycle' && (await state()).audioState.scene === 'piano', (await state()).audioState);
+    await current.evaluate(() => __setHidden(true));
+    check('Cycle pauses while CleanFrame is hidden', (await state()).audioState.preference === 'cycle' && (await state()).audioState.active === 'off', (await state()).audioState);
+    await current.evaluate(() => __setHidden(false));
+    await current.waitForFunction(() => ShoreQA.state().audioState.active === 'cycle');
+    check('Cycle resumes on the same scene when CleanFrame returns', (await state()).audioState.scene === 'piano', (await state()).audioState);
     await group('audio'); await choice('audio', 'off');
     check('Off applies, saves and stops the engine', (await state()).committed.audio === 'off' && (await stored()).audio === 'off' && (await state()).audioState.preference === 'off' && (await state()).audioState.active === 'off', await state());
     await closePage();
     await page({ seed: baseline({ audio: 'music' }) });
     check('Saved Music preference restores on cold start', (await state()).committed.audio === 'music' && (await state()).audioState.preference === 'music' && (await state()).audioState.active === 'music', await state());
+    await closePage();
+    await page({ seed: baseline({ audio: 'beach' }) });
+    check('Saved scene preference restores on cold start', (await state()).committed.audio === 'beach' && (await state()).audioState.preference === 'beach' && (await state()).audioState.active === 'beach' && (await state()).audioState.scene === 'beach', await state());
+    await closePage();
+    await page({ seed: baseline({ audio: 'cycle' }) });
+    check('Saved Cycle preference restores on the first scene', (await state()).committed.audio === 'cycle' && (await state()).audioState.preference === 'cycle' && (await state()).audioState.active === 'cycle' && (await state()).audioState.scene === 'relaxing', await state());
   });
   await run('Settings inactive Material retains its choice', async () => {
     await page(); await look({ material: 'tint' });

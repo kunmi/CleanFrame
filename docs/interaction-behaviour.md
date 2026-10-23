@@ -20,7 +20,7 @@ Settings opens a grouped overview: Background, Layout, Typography, Focus, Backgr
 | Layout | List or Dock; independent Text, Icons or Both choices for apps and Home controls |
 | Typography | Manrope, Neue Montreal, Mori, Pangram Sans, Geist and Newsreader, when available |
 | Focus | Type or Glass; Soft, Frost or Clear tint material |
-| Background audio | Off, Relaxing tunes or Music |
+| Background audio | Off, Cycle through all, or one of seventeen generated scenes |
 | Apps on Home | Membership and arrangement editor |
 | Samsung | Samsung Home and TV settings |
 
@@ -34,7 +34,7 @@ The selected font applies to Home app names, the clock and Home controls, includ
 
 ## Background audio
 
-Background audio is an original generative Web Audio soundtrack, not a music file or streaming service. **Relaxing tunes** uses slow chord pads and sparse notes; **Music** uses the same chord family with a gentle bass, lead and percussion pattern. OK applies and saves the choice. Playback belongs to the visible CleanFrame app: it fades out before another app, Art Mode or a Samsung screen opens, pauses while CleanFrame is hidden, and resumes on return when the saved choice is not Off. A browser or TV may wait for the first remote key press before allowing the audio context to start.
+Background audio is an original generative Web Audio soundtrack, not a music file or streaming service. Seventeen scenes are generated live: **Relaxing tunes** (slow chord pads and sparse notes), **Music** (the same chord family with a gentle bass, lead and percussion pattern), **Piano dawn**, **Lo-fi keys**, **Music box**, **String pads**, **Jazz café**, **Acoustic plucks**, **Beach waves**, **Rain**, **Thunderstorm**, **Forest birds**, **Mountain stream**, **Meadow wind**, **Night crickets**, **Campfire** and **Deep ocean**. Switching scenes crossfades over a few seconds. **Cycle through all** plays each scene for three minutes in the order above, crossfading into the next and looping; pausing keeps the current scene and its remaining time, and returning resumes that scene. OK applies and saves the choice. Playback belongs to the visible CleanFrame app: it fades out before another app, Art Mode or a Samsung screen opens, pauses while CleanFrame is hidden, and resumes on return when the saved choice is not Off. A browser or TV may wait for the first remote key press before allowing the audio context to start.
 
 ## Streaming apps
 

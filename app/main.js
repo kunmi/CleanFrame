@@ -38,8 +38,12 @@
     { id: '5', name: 'Every 5 minutes', min: 5 }, { id: '15', name: 'Every 15 minutes', min: 15 },
     { id: '60', name: 'Every hour', min: 60 }
   ];
-  var AUDIO_MODES = ['off', 'relaxing', 'music'];
-  var AUDIO_NAMES = { off: 'Off', relaxing: 'Relaxing tunes', music: 'Music' };
+  var AUDIO_MODES = ['off', 'cycle', 'relaxing', 'music', 'piano', 'lofi', 'musicbox', 'strings', 'jazz', 'guitar',
+    'beach', 'rain', 'storm', 'forest', 'stream', 'wind', 'crickets', 'campfire', 'ocean'];
+  var AUDIO_NAMES = { off: 'Off', cycle: 'Cycle through all', relaxing: 'Relaxing tunes', music: 'Music',
+    piano: 'Piano dawn', lofi: 'Lo-fi keys', musicbox: 'Music box', strings: 'String pads', jazz: 'Jazz café',
+    guitar: 'Acoustic plucks', beach: 'Beach waves', rain: 'Rain', storm: 'Thunderstorm', forest: 'Forest birds',
+    stream: 'Mountain stream', wind: 'Meadow wind', crickets: 'Night crickets', campfire: 'Campfire', ocean: 'Deep ocean' };
   var KEY = 'cleanframe.home.v1', storageOk = true, catalog = { loading: false, loaded: false, error: null, request: 0, revision: 0 };
   var QA = window.ShoreQA = { minuteMs: window.ShoreQA && window.ShoreQA.minuteMs || 60000 };
   var FONTS = {
@@ -886,8 +890,14 @@
       { id: 'material', title: 'Material', horizontal: true, items: options('material', ['soft', 'frost', 'tint'], inactive),
         reason: inactive ? flat ? 'Materials are available with a Photo background.' : 'Choose Glass focus or the Dock layout to use materials.' : '' }
     ];
-    if (t.group === 'audio') return [{ id: 'audio', title: 'While CleanFrame is open', items: options('audio', AUDIO_MODES),
-      reason: 'Audio fades out before another app opens and resumes when you return to CleanFrame.' }];
+    if (t.group === 'audio') {
+      var audioSections = [{ id: 'audio', title: 'While CleanFrame is open', horizontal: true, items: options('audio', ['off', 'cycle']) }];
+      var sceneIds = AUDIO_MODES.slice(2), pair;
+      for (pair = 0; pair < sceneIds.length; pair += 2)
+        audioSections.push({ id: 'audio', horizontal: true, items: options('audio', sceneIds.slice(pair, pair + 2)) });
+      audioSections[audioSections.length - 1].reason = 'Cycle plays each scene for a few minutes, then moves on. Audio fades out before another app opens.';
+      return audioSections;
+    }
     if (t.group === 'rotation') return [{ id: 'mode', title: '', items: options('mode', MODES.map(function (m) { return m.id; }), flat),
       reason: flat ? 'Choose Photo in Background to use rotation.' : 'Timed changes pause while Settings or another panel is open.' }];
     return [{ id: 'samsung', title: '', items: [

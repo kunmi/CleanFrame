@@ -511,6 +511,10 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000}
 .detail-layout .setting-section+.setting-section,.detail-focus .setting-section+.setting-section{margin-top:64px}
 .detail-typography .setting-choice,.detail-rotation .setting-choice{min-height:88px}
 .detail-typography .appearance-rows,.detail-rotation .appearance-rows,.detail-samsung .appearance-rows{top:260px}
+.detail-audio .appearance-rows{top:222px}
+.detail-audio .setting-section+.setting-section{margin-top:4px}
+.detail-audio .setting-choice{min-height:56px;padding:8px 18px;gap:12px;font-size:29px;line-height:36px}
+.detail-audio .setting-reason{margin-top:12px;font-size:23px;line-height:30px}
 .setting-choice.has-description{min-height:120px}
 .setting-description{font-size:26px;line-height:36px;font-weight:400;letter-spacing:0;color:var(--mute);white-space:normal}
 .setting-choice.is-focus .setting-description{color:var(--solid-mute)}
