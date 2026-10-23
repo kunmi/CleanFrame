@@ -25,6 +25,12 @@ A quieter home screen for Samsung The Frame. Your apps, a photograph and the tim
 > Settings → Background → Live video quality chooses between them (4K by
 > default, dropping to HD automatically when 4K cannot play). Sources and
 > licences are in [asset sources](docs/asset-sources.md).
+>
+> **Install on the TV via TizenBrew:** Module Manager → Add GitHub Module →
+> `kunmi/CleanFrame@v0.6.6` (pin the version; the unversioned address can
+> serve a stale snapshot). Note: under TizenBrew the tiles display but
+> cannot launch apps — launching needs the signed standalone install
+> described in the setup guide.
 
 ![CleanFrame browser preview using the bundled Manrope font](docs/images/cleanframe-dock.jpg)
 
