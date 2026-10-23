@@ -241,7 +241,8 @@ window.CleanFrameWallpapers = [
     "listColumn": 0,
     "dockQuiet": false,
     "clockMist": true,
-    "video": "surf.mp4"
+    "video": "surf.mp4",
+    "video4k": "surf-4k.mp4"
   },
   {
     "id": "duskcoast",
@@ -257,7 +258,8 @@ window.CleanFrameWallpapers = [
     "listColumn": 0,
     "dockQuiet": false,
     "clockMist": true,
-    "video": "duskcoast.mp4"
+    "video": "duskcoast.mp4",
+    "video4k": "duskcoast-4k.mp4"
   },
   {
     "id": "rainwindow",
@@ -273,6 +275,7 @@ window.CleanFrameWallpapers = [
     "listColumn": 0,
     "dockQuiet": false,
     "clockMist": true,
-    "video": "rainwindow.mp4"
+    "video": "rainwindow.mp4",
+    "video4k": "rainwindow-4k.mp4"
   }
 ];

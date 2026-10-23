@@ -28,7 +28,7 @@ The fifteen photo pages were individually checked on 20 October 2026. Each displ
 
 Photographers retain their rights. Wallpapers, thumbnails, panel backgrounds and material fields derive from the credited photographs and retain their terms. The Unsplash licence permits copying, modification and distribution subject to its restrictions, including on selling unmodified images and building a competing image service.
 
-Three wallpapers are live video loops trimmed from Wikimedia Commons videos: Rolling surf by Mike Peel ([CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0)), Dusk coast by Joaquim Baeta ([CC BY 4.0](https://creativecommons.org/licenses/by/4.0)) and Rain window by Frank Vincentz ([CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0)). Their still frames and derived materials carry the same licences. Source pages are linked in the [asset source register](docs/asset-sources.md).
+Three wallpapers are live video loops trimmed from Pexels videos under the [Pexels License](https://www.pexels.com/license/): Rolling surf by Taryn Elliott, Dusk coast by K and Rain window by Joey D. Each ships an HD H.264 loop and a 4K HEVC loop; their still frames and derived materials come from the same videos. Source pages are linked in the [asset source register](docs/asset-sources.md).
 
 ## Development dependencies and exports
 

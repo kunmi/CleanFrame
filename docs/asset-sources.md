@@ -24,13 +24,13 @@ The background preparation and material rendering steps are described in [asset 
 
 ## Live wallpapers
 
-Added 23 October 2026. Three wallpapers are live video backgrounds. Each loop is a 15-second, muted, 1920×1080 H.264 MP4 trimmed from the credited Wikimedia Commons video, with a short crossfade at the loop join; the bundled still, thumbnail, panel backdrop and material fields are frames derived from the same video, so the stills and materials of Rolling surf and Rain window are available under the same CC BY-SA terms as their source videos. Runtime paths are in `app/assets/wallpapers/SOURCES.json`.
+Added 23 October 2026; 4K versions added the same day. Three wallpapers are live video backgrounds. Each ships two muted loops trimmed from the credited Pexels video, with a short crossfade at the loop join: a 1920×1080 H.264 MP4 (Rolling surf's is about 11 seconds; the others are 15 seconds) and a 3840×2160 HEVC MP4, which Settings → Background → Live video quality selects between (4K by default, with an automatic drop to HD when 4K cannot play). The bundled still, thumbnail, panel backdrop and material fields are frames derived from the same videos. Runtime paths are in `app/assets/wallpapers/SOURCES.json`.
 
 | Wallpaper | Author | Source | Licence |
 | --- | --- | --- | --- |
-| Rolling surf | Mike Peel | [Mesa del Mar waves 2](https://commons.wikimedia.org/wiki/File:Mesa_del_Mar_waves_2.webm) | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0) |
-| Dusk coast | Joaquim Baeta | [Sunset in Pantai Kukup](https://commons.wikimedia.org/wiki/File:Sunset_in_Pantai_Kukup.webm) | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0) |
-| Rain window | Frank Vincentz | [Radevormwald – Raindrops on a window 07](https://commons.wikimedia.org/wiki/File:Radevormwald_-_Raindrops_on_a_window_07_(1)_ies.webm) | [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0) |
+| Rolling surf | Taryn Elliott | [Close-up of waves breaking in the rocks](https://www.pexels.com/video/close-up-of-waves-breaking-in-the-rocks-6473454/) | [Pexels License](https://www.pexels.com/license/) |
+| Dusk coast | K | [Close-up shot of waves in the shore](https://www.pexels.com/video/close-up-shot-of-waves-in-the-shore-6770638/) | [Pexels License](https://www.pexels.com/license/) |
+| Rain window | Joey D. | [Raindrops on a window glass](https://www.pexels.com/video/raindrops-on-a-window-glass-13619802/) | [Pexels License](https://www.pexels.com/license/) |
 
 ## Fonts and icons
 

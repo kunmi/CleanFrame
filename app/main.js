@@ -58,7 +58,8 @@
   var LOOK_KEYS = ['bg', 'layout', 'apps', 'font', 'controls', 'focus', 'material'];
   var LOOK_VALUES = { bg: ['dark', 'light', 'photo'], layout: ['list', 'dock'], apps: ['icons', 'both', 'text'], font: Object.keys(FONTS).filter(function (id) { return id === 'manrope' || PRIVATE_FONTS.indexOf(id) >= 0; }), controls: ['icons', 'both', 'text'], focus: ['type', 'glass'], material: ['soft', 'frost', 'tint'] };
   var LOOK_NAMES = { bg: 'Background', layout: 'Layout', apps: 'Apps', font: 'Font', controls: 'Home controls', focus: 'Focus', material: 'Material' };
-  var VALUE_NAMES = { dark: 'Dark', light: 'Light', photo: 'Photo', list: 'List', dock: 'Dock', type: 'Type', glass: 'Glass', soft: 'Soft', frost: 'Frost', tint: 'Clear tint', icons: 'Icons', both: 'Icons and text', text: 'Text' };
+  var VALUE_NAMES = { dark: 'Dark', light: 'Light', photo: 'Photo', list: 'List', dock: 'Dock', type: 'Type', glass: 'Glass', soft: 'Soft', frost: 'Frost', tint: 'Clear tint', icons: 'Icons', both: 'Icons and text', text: 'Text', '4k': '4K', hd: 'HD 1080p' };
+  var VIDEO_QUALITIES = ['4k', 'hd'];
   var UTIL = { art: ['Art Mode', 'art'], apps: ['All apps', 'apps'], arrange: ['Arrange', 'arrange'], settings: ['Settings', 'settings'] };
   var MSG = {
     leave: { title: 'Leave Home?', line: 'Open Samsung Home?', note: '', actions: [['stay', 'Stay'], ['samsung', 'Samsung Home']] }
@@ -358,7 +359,8 @@
       font: pick(modern.font, LOOK_VALUES.font, 'manrope'), wall: wall(modern.wall || s.wallpaper) ? modern.wall || s.wallpaper : WALLS[0].id,
       home: h, recent: recent, lastApp: h.indexOf(s.lastApp) >= 0 ? s.lastApp : h[0],
       mode: pick(s.mode, MODES.map(function (m) { return m.id; }), 'fixed'),
-      audio: pick(s.audio, AUDIO_MODES, 'off')
+      audio: pick(s.audio, AUDIO_MODES, 'off'),
+      videoQuality: pick(s.videoQuality, VIDEO_QUALITIES, '4k')
     };
   }
   function serialise(c) {
@@ -383,7 +385,7 @@
   }
   function clearSession() { S.undo = []; S.removedAt = {}; S.note = null; S.err = null; }
   function begin() { S.note = null; }
-  function next(home, recent) { var c = lookOf(S.c); c.home = home; c.recent = recent; c.lastApp = S.c.lastApp; c.mode = S.c.mode; c.audio = S.c.audio; return c; }
+  function next(home, recent) { var c = lookOf(S.c); c.home = home; c.recent = recent; c.lastApp = S.c.lastApp; c.mode = S.c.mode; c.audio = S.c.audio; c.videoQuality = S.c.videoQuality; return c; }
   function snap() { return { home: S.c.home.slice(), recent: S.c.recent.slice() }; }
   function pushRecent(list, id) { return [id].concat(without(list, id)).slice(0, 5); }
   function write(c, label) {
@@ -879,7 +881,8 @@
     if (t.group === 'background') return [
       { id: 'bg', title: 'Background type', items: options('bg', ['photo', 'light', 'dark']) },
       { id: 'wall', title: 'Wallpaper', items: [{ action: 'background.wallpaper', label: wall(S.c.wall).name, thumbnail: true, disabled: flat }] },
-      { id: 'rotation', title: 'Rotation', items: [{ action: 'background.rotation', label: mode().name, disabled: flat }], reason: flat ? 'Choose Photo to use wallpaper and rotation.' : '' }
+      { id: 'rotation', title: 'Rotation', items: [{ action: 'background.rotation', label: mode().name, disabled: flat }], reason: flat ? 'Choose Photo to use wallpaper and rotation.' : '' },
+      { id: 'videoQuality', title: 'Live video quality', horizontal: true, items: options('videoQuality', VIDEO_QUALITIES, flat) }
     ];
     if (t.group === 'layout') return [
       { id: 'layout', title: 'Layout', horizontal: true, items: options('layout', ['list', 'dock']) },
@@ -936,6 +939,18 @@
     c = next(S.c.home.slice(), S.c.recent.slice()); c.mode = value;
     if (!write(c, 'Wallpaper rotation')) S.lookError = { type: 'save', patch: { mode: value }, row: 'mode', transient: false };
   }
+  function applyVideoQuality(value) {
+    var c;
+    S.err = null; S.lookError = null;
+    if (value === S.c.videoQuality) return;
+    c = next(S.c.home.slice(), S.c.recent.slice()); c.videoQuality = value;
+    if (!write(c, 'Live video quality')) {
+      S.lookError = { type: 'save', patch: { videoQuality: value }, row: 'videoQuality', transient: false };
+      return;
+    }
+    destroyLiveVideo();
+    syncLiveVideo();
+  }
   function applyAudio(value) {
     var c;
     S.err = null; S.lookError = null;
@@ -956,9 +971,11 @@
       if (error && error.patch[error.row] !== undefined) detailFocus(t, choice(error.row, error.patch[error.row]), 0);
       if (error && error.row === 'audio') applyAudio(error.patch.audio);
       else if (error && error.row === 'mode') applyRotation(error.patch.mode);
+      else if (error && error.row === 'videoQuality') applyVideoQuality(error.patch.videoQuality);
       else if (error) setLook(error.patch, { row: error.row });
     } else if (item.axis === 'audio') applyAudio(item.value);
     else if (item.axis === 'mode') applyRotation(item.value);
+    else if (item.axis === 'videoQuality') applyVideoQuality(item.value);
     else if (item.axis) { patch[item.axis] = item.value; setLook(patch, { row: item.axis }); }
     else if (item.action === 'background.wallpaper') openWallpaper();
     else if (item.action === 'background.rotation') openAppearance('rotation');
@@ -1791,15 +1808,17 @@
 
   /* ---------- Live video wallpapers ----------
      A live wallpaper keeps its still photo as the base layer and the video
-     only ever sits on top of it, muted and looping. Any load or codec
+     only ever sits on top of it, muted and looping. The saved Live video
+     quality (4K by default) picks the HEVC file when the wallpaper has
+     one; a 4K failure drops to the HD file, and any further load or codec
      failure removes the video and leaves the still, so a live wallpaper
      can never break the Home screen. Playback mirrors the background
      audio lifecycle: it pauses while CleanFrame is hidden and while an
      app launch is in flight, and resumes on return. */
-  var liveVideoEl = null, liveVideoId = null, liveVideoHeld = false;
+  var liveVideoEl = null, liveVideoId = null, liveVideoHeld = false, liveVideoFile = null, liveVideoQuality = null, liveVideoFellBack = false;
   function destroyLiveVideo() {
     var el = liveVideoEl;
-    liveVideoEl = null; liveVideoId = null;
+    liveVideoEl = null; liveVideoId = null; liveVideoFile = null; liveVideoQuality = null; liveVideoFellBack = false;
     if (!el) return;
     try { el.pause(); } catch (e) {}
     el.removeAttribute('src');
@@ -1812,6 +1831,24 @@
     w = wall(S.shown.wall);
     return w && w.video ? w : null;
   }
+  /* The saved quality picks the file: 4K (HEVC) first when the wallpaper
+     has one, HD (H.264) otherwise. A wallpaper without a 4K file, or a 4K
+     file that fails to load or decode, lands on the same HD file. */
+  function liveVideoChoice(w) {
+    if (S.c.videoQuality === '4k' && w.video4k) return { file: w.video4k, quality: '4k' };
+    return { file: w.video, quality: 'hd' };
+  }
+  function liveVideoFailed(el) {
+    var w = wall(liveVideoId);
+    if (w && liveVideoQuality === '4k') {
+      liveVideoFile = w.video; liveVideoQuality = 'hd'; liveVideoFellBack = true;
+      el.className = 'live-video';
+      el.src = WP + w.video;
+      applyLiveVideoPlayback();
+      return;
+    }
+    destroyLiveVideo();
+  }
   function applyLiveVideoPlayback() {
     var p;
     if (!liveVideoEl) return;
@@ -1819,9 +1856,13 @@
     try { p = liveVideoEl.play(); if (p && p.catch) p.catch(function () {}); } catch (e) {}
   }
   function syncLiveVideo() {
-    var target = liveVideoTarget(), el;
+    var target = liveVideoTarget(), el, choice;
     if (!target) { destroyLiveVideo(); return; }
-    if (liveVideoId !== target.id || !liveVideoEl) {
+    choice = liveVideoChoice(target);
+    /* A wallpaper already playing its HD fallback keeps it until the
+       wallpaper changes or the quality choice is applied again; a failed
+       4K file is not retried on every lifecycle sync. */
+    if (liveVideoId !== target.id || !liveVideoEl || (!liveVideoFellBack && liveVideoFile !== choice.file)) {
       destroyLiveVideo();
       el = document.createElement('video');
       el.className = 'live-video';
@@ -1829,17 +1870,17 @@
       el.muted = true; el.loop = true; el.autoplay = true;
       el.setAttribute('playsinline', ''); el.setAttribute('preload', 'auto');
       el.addEventListener('playing', function () { if (liveVideoEl === el) el.className = 'live-video is-on'; });
-      el.addEventListener('error', function () { if (liveVideoEl === el) destroyLiveVideo(); }, true);
-      el.src = WP + target.video;
+      el.addEventListener('error', function () { if (liveVideoEl === el) liveVideoFailed(el); }, true);
+      el.src = WP + choice.file;
       IMG.photo.parentNode.insertBefore(el, IMG.photo.nextSibling);
-      liveVideoEl = el; liveVideoId = target.id;
+      liveVideoEl = el; liveVideoId = target.id; liveVideoFile = choice.file; liveVideoQuality = choice.quality;
     }
     applyLiveVideoPlayback();
   }
   function holdLiveVideo(held) { liveVideoHeld = held; applyLiveVideoPlayback(); }
   function liveVideoState() {
     if (!liveVideoEl) return null;
-    return { id: liveVideoId, paused: liveVideoEl.paused, src: liveVideoEl.getAttribute('src'), live: liveVideoEl.className.indexOf('is-on') >= 0 };
+    return { id: liveVideoId, paused: liveVideoEl.paused, src: liveVideoEl.getAttribute('src'), quality: liveVideoQuality, live: liveVideoEl.className.indexOf('is-on') >= 0 };
   }
 
   /* ---------- Lifecycle and remote input ---------- */

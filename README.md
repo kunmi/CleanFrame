@@ -19,9 +19,11 @@ A quieter home screen for Samsung The Frame. Your apps, a photograph and the tim
 > returns.
 >
 > Three of the wallpapers are **live video backgrounds**: short muted
-> Creative Commons loops (Rolling surf, Dusk coast and Rain window) that
-> play over their still photo, pause when CleanFrame is hidden or another
-> app opens, and fall back to the still if video cannot play. Sources and
+> loops (Rolling surf, Dusk coast and Rain window) that play over their
+> still photo, pause when CleanFrame is hidden or another app opens, and
+> fall back to the still if video cannot play. Each ships in HD and in 4K;
+> Settings → Background → Live video quality chooses between them (4K by
+> default, dropping to HD automatically when 4K cannot play). Sources and
 > licences are in [asset sources](docs/asset-sources.md).
 
 ![CleanFrame browser preview using the bundled Manrope font](docs/images/cleanframe-dock.jpg)

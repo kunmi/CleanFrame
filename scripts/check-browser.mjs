@@ -365,7 +365,7 @@ try {
     const expected = ['settings.group.background', 'settings.group.layout', 'settings.group.typography', 'settings.group.focus', 'settings.group.audio', 'settings.editor', 'settings.group.samsung'];
     check('Overview has all seven settings groups', same((await call('actions')).filter(a => expected.includes(a)).sort(), expected.slice().sort()));
     const specs = {
-      background: { bg: ['dark', 'light', 'photo'] },
+      background: { bg: ['dark', 'light', 'photo'], videoQuality: ['4k', 'hd'] },
       layout: { layout: ['list', 'dock'], apps: ['icons', 'both', 'text'], controls: ['icons', 'both', 'text'] },
       typography: { font: (await state()).fonts.available },
       focus: { focus: ['type', 'glass'], material: ['soft', 'frost', 'tint'] },
@@ -858,7 +858,15 @@ try {
   await run('Live video wallpapers', async () => {
     const live = walls.filter(w => w.video);
     check('Catalogue has three live wallpapers with bundled loops', live.length === 3 && live.every(w => existsSync(root + 'app/' + w.video)), live.map(w => w.id));
+    check('Every live wallpaper also bundles a 4K loop', live.every(w => w.video4k && existsSync(root + 'app/' + w.video4k)), live.map(w => w.id));
     await page();
+    check('Live video quality defaults to 4K on a fresh profile', (await state()).committed.videoQuality === '4k' && (await stored()).videoQuality === '4k', await state());
+    /* Headless Chromium cannot decode HEVC, so on this page every bundled
+       loop is served the same decodable H.264 bytes: the assertions cover
+       which file the player selects and swaps to, never decoded frames.
+       The failure pages below use real requests and aborts instead. */
+    const loopBytes = readFileSync(root + 'app/assets/wallpapers/surf.mp4');
+    await current.route('**/wallpapers/*.mp4', route => route.fulfill({ body: loopBytes, contentType: 'video/mp4' }));
     /* Headless Chromium may lack H.264, so assert the element wiring and the
        play/pause calls, not decoded frames. */
     await current.evaluate(() => {
@@ -875,8 +883,8 @@ try {
       return { count: els.length, tag: el && el.tagName, src: el && el.getAttribute('src'), muted: el && el.muted, loop: el && el.loop,
         photo: document.getElementById('photo').getAttribute('src') };
     });
-    check('Applying Rolling surf adds exactly one muted looping video over its still', wired.count === 1 && wired.tag === 'VIDEO' && wired.src.endsWith('/wallpapers/surf.mp4') && wired.muted === true && wired.loop === true && wired.photo.endsWith('/wallpapers/surf.jpg'), wired);
-    check('QA reports the live video and playback was requested', (await state()).liveVideo !== null && (await state()).liveVideo.id === 'surf' && (await mediaCalls()).includes('play'), await state());
+    check('Applying Rolling surf adds exactly one muted looping video over its still', wired.count === 1 && wired.tag === 'VIDEO' && wired.src.endsWith('/wallpapers/surf-4k.mp4') && wired.muted === true && wired.loop === true && wired.photo.endsWith('/wallpapers/surf.jpg'), wired);
+    check('QA reports the live video and playback was requested', (await state()).liveVideo !== null && (await state()).liveVideo.id === 'surf' && (await state()).liveVideo.quality === '4k' && (await mediaCalls()).includes('play'), await state());
     await current.screenshot({ path: out + 'live-wallpaper-surf-1920.jpg', quality: 90 });
     await current.evaluate(() => __setHidden(true));
     check('Hiding CleanFrame pauses the live video', (await mediaCalls()).includes('pause') && (await state()).liveVideo.paused === true, await state());
@@ -885,6 +893,18 @@ try {
     const pausesBefore = (await mediaCalls()).filter(c => c === 'pause').length;
     await act('home.app.netflix');
     check('Launching an app pauses the live video first', (await mediaCalls()).filter(c => c === 'pause').length > pausesBefore && (await state()).liveVideo.paused === true, await state());
+    await group('background');
+    const qualityRows = (await radios()).filter(r => r.action.startsWith('choice.videoQuality.'));
+    check('Background offers Live video quality choices with 4K applied', same(qualityRows.map(r => r.action).sort(), ['choice.videoQuality.4k', 'choice.videoQuality.hd']) && qualityRows.some(r => r.action === 'choice.videoQuality.4k' && r.checked === 'true'), qualityRows);
+    const qualityBefore = await settingsSnapshot();
+    await act('choice.videoQuality.hd');
+    check('HD quality saves once and swaps the playing video to the HD loop', (await state()).committed.videoQuality === 'hd' && (await stored()).videoQuality === 'hd' && (await state()).writes === qualityBefore.writes + 1 && (await state()).liveVideo !== null && (await state()).liveVideo.src.endsWith('/wallpapers/surf.mp4') && (await state()).liveVideo.quality === 'hd', await state());
+    const hdApplied = await settingsSnapshot();
+    await act('choice.videoQuality.hd');
+    check('HD quality OK on the applied choice does not write again', same(await settingsSnapshot(), hdApplied));
+    await act('choice.videoQuality.4k');
+    check('4K quality saves once and swaps the playing video back to the 4K loop', (await state()).committed.videoQuality === '4k' && (await stored()).videoQuality === '4k' && (await state()).writes === hdApplied.writes + 1 && (await state()).liveVideo !== null && (await state()).liveVideo.src.endsWith('/wallpapers/surf-4k.mp4') && (await state()).liveVideo.quality === '4k', await state());
+    await scene('home');
     await look({ wall: walls[0].id });
     check('Switching to a still wallpaper removes the video', (await state()).liveVideo === null && await current.evaluate(() => !document.querySelector('.live-video')));
     await wallpaper();
@@ -900,8 +920,26 @@ try {
     await current.waitForFunction(id => ShoreQA.state().wallpaper === id, 'duskcoast', { timeout: 6000 });
     check('Rotation between live wallpapers replaces the video', (await state()).liveVideo !== null && (await state()).liveVideo.id === 'duskcoast' && await current.evaluate(() => document.querySelectorAll('.live-video').length === 1), await state());
     await closePage();
+    await page({ seed: baseline({ videoQuality: 'hd' }) });
+    check('A saved HD preference is honoured', (await state()).committed.videoQuality === 'hd', await state());
+    await look({ wall: 'surf' });
+    check('The HD preference plays the HD loop directly', (await state()).liveVideo !== null && (await state()).liveVideo.src.endsWith('/wallpapers/surf.mp4') && (await state()).liveVideo.quality === 'hd', await state());
+    await closePage();
     await page();
-    current.__expectedFailures.push('/wallpapers/surf.mp4');
+    await current.evaluate(() => { delete window.CleanFrameWallpapers.find(w => w.id === 'surf').video4k; });
+    await look({ wall: 'surf' });
+    check('A live wallpaper without a 4K file plays the HD loop directly', (await state()).liveVideo !== null && (await state()).liveVideo.src.endsWith('/wallpapers/surf.mp4') && (await state()).liveVideo.quality === 'hd', await state());
+    await closePage();
+    await page();
+    current.__expectedFailures.push('/wallpapers/surf-4k.mp4');
+    await current.route('**/wallpapers/surf-4k.mp4', route => route.abort('failed'));
+    await look({ wall: 'surf' });
+    await current.waitForFunction(() => { const v = ShoreQA.state().liveVideo; return v && v.src.endsWith('/wallpapers/surf.mp4'); });
+    check('A failed 4K loop falls back to the HD loop', (await state()).liveVideo !== null && (await state()).liveVideo.id === 'surf' && (await state()).liveVideo.quality === 'hd' && (await state()).shown.wall === 'surf' && !(await state()).error, await state());
+    await closePage();
+    await page();
+    current.__expectedFailures.push('/wallpapers/surf-4k.mp4', '/wallpapers/surf.mp4');
+    await current.route('**/wallpapers/surf-4k.mp4', route => route.abort('failed'));
     await current.route('**/wallpapers/surf.mp4', route => route.abort('failed'));
     await look({ wall: 'surf' });
     await current.waitForFunction(() => !document.querySelector('.live-video'));

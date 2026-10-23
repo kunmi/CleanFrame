@@ -156,10 +156,11 @@
     "thumb": "assets/wallpapers/surf-thumb.jpg",
     "pos": "50% 50%",
     "tone": "light",
-    "credit": "Mike Peel",
-    "source": "https://commons.wikimedia.org/wiki/File:Mesa_del_Mar_waves_2.webm",
-    "license": "CC BY-SA 4.0",
-    "video": "assets/wallpapers/surf.mp4"
+    "credit": "Taryn Elliott",
+    "source": "https://www.pexels.com/video/close-up-of-waves-breaking-in-the-rocks-6473454/",
+    "license": "Pexels License",
+    "video": "assets/wallpapers/surf.mp4",
+    "video4k": "assets/wallpapers/surf-4k.mp4"
   },
   {
     "id": "duskcoast",
@@ -168,10 +169,11 @@
     "thumb": "assets/wallpapers/duskcoast-thumb.jpg",
     "pos": "50% 50%",
     "tone": "dark",
-    "credit": "Joaquim Baeta",
-    "source": "https://commons.wikimedia.org/wiki/File:Sunset_in_Pantai_Kukup.webm",
-    "license": "CC BY 4.0",
-    "video": "assets/wallpapers/duskcoast.mp4"
+    "credit": "K",
+    "source": "https://www.pexels.com/video/close-up-shot-of-waves-in-the-shore-6770638/",
+    "license": "Pexels License",
+    "video": "assets/wallpapers/duskcoast.mp4",
+    "video4k": "assets/wallpapers/duskcoast-4k.mp4"
   },
   {
     "id": "rainwindow",
@@ -180,9 +182,10 @@
     "thumb": "assets/wallpapers/rainwindow-thumb.jpg",
     "pos": "50% 50%",
     "tone": "light",
-    "credit": "Frank Vincentz",
-    "source": "https://commons.wikimedia.org/wiki/File:Radevormwald_-_Raindrops_on_a_window_07_(1)_ies.webm",
-    "license": "CC BY-SA 3.0",
-    "video": "assets/wallpapers/rainwindow.mp4"
+    "credit": "Joey D.",
+    "source": "https://www.pexels.com/video/raindrops-on-a-window-glass-13619802/",
+    "license": "Pexels License",
+    "video": "assets/wallpapers/rainwindow.mp4",
+    "video4k": "assets/wallpapers/rainwindow-4k.mp4"
   }
 ]
